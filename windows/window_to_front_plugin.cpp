@@ -2,15 +2,17 @@
 
 // This must be included before many other Windows headers.
 #include <windows.h>
-
 #include <flutter/method_channel.h>
 #include <flutter/plugin_registrar_windows.h>
 #include <flutter/standard_method_codec.h>
 
 #include <map>
 #include <memory>
+#include <string>
+#include <malloc.h>
 
 namespace {
+using flutter::EncodableValue;
 
 class WindowToFrontPlugin : public flutter::Plugin {
  public:
@@ -54,13 +56,18 @@ WindowToFrontPlugin::WindowToFrontPlugin(flutter::PluginRegistrarWindows *regist
 WindowToFrontPlugin::~WindowToFrontPlugin() {}
 
 void WindowToFrontPlugin::HandleMethodCall(
-    const flutter::MethodCall<> &method_call,
-    std::unique_ptr<flutter::MethodResult<>> result) {
+    const flutter::MethodCall<flutter::EncodableValue> &method_call,
+    std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
   if (method_call.method_name().compare("activate") == 0) {
-    // See https://stackoverflow.com/a/34414846/2142626 for an explanation of how
-    // this raises a window to the foreground.
     HWND m_hWnd = registrar_->GetView()->GetNativeWindow();
     HWND hCurWnd = ::GetForegroundWindow();
+    std::string appName;
+    int len = GetWindowTextLengthA(hCurWnd) + 1;
+	if (len != 0) {
+		char *text = (char *)alloca(len);
+		len = GetWindowTextA(hCurWnd, text, len);
+		appName = std::string(text, len);
+	}
     DWORD dwMyID = ::GetCurrentThreadId();
     DWORD dwCurID = ::GetWindowThreadProcessId(hCurWnd, NULL);
     ::AttachThreadInput(dwCurID, dwMyID, TRUE);
@@ -70,7 +77,7 @@ void WindowToFrontPlugin::HandleMethodCall(
     ::SetFocus(m_hWnd);
     ::SetActiveWindow(m_hWnd);
     ::AttachThreadInput(dwCurID, dwMyID, FALSE);
-    result->Success();
+    result->Success(EncodableValue(appName));
   } else {
     result->NotImplemented();
   }
