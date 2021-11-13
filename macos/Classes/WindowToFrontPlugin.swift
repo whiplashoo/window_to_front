@@ -10,14 +10,14 @@ public class WindowToFrontPlugin: NSObject, FlutterPlugin {
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     switch call.method {
-    // Add from here
     case "activate":
       let res = NSWorkspace.shared.frontmostApplication?.localizedName
+      let mainWindow = NSApp.windows[0]
+      if (mainWindow.isMiniaturized) {
+        mainWindow.deminiaturize(self);
+      }
       NSApplication.shared.activate(ignoringOtherApps: true)
       result(res)
-    // to here.
-    // Delete the getPlatformVersion case,
-    // as we won't be using it.
     default:
       result(FlutterMethodNotImplemented)
     }
